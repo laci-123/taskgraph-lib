@@ -1,0 +1,23 @@
+{
+  "name": "taskgraph-lib",
+  "version": "1.0.0",
+  "description": "Non-GUI part of TaskGraph",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "files": [
+    "/dist"
+  ],
+  "scripts": {
+    "build": "tsup src/index.ts",
+    "test": "echo 'There are no test.'"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/laci-123/taskgraph-lib.git"
+  },
+  "author": "Gohér László",
+  "devDependencies": {
+    "tsup": "^8.0.2",
+    "typescript": "^5.4.5"
+  }
+}
