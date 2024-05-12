@@ -7,6 +7,26 @@ export type dummy_type = {_never_used?: never};
 
 
 /**
+ * Integer type.
+ */
+export type Integer = number & {_never_used: void};
+
+/**
+ * Converts a number to an {@link Integer}.
+ *
+ * Throws error if `x` is not an integer.
+ */
+export function number_to_int(x: number): Integer {
+    if(Number.isInteger(x)) {
+        return x as Integer;
+    }
+    else {
+        throw new Error(`${x} is not an integer`);
+    }
+}
+
+
+/**
  * Milliseconds since the [Unix Epoch](https://en.wikipedia.org/wiki/Unix_time).
  * Easy to convert to/from the JavaScript `Date` type.
  * 
@@ -79,8 +99,8 @@ export interface Recurrence {
  * This way a lower priority task will never block a higher priority task.
  */
 export interface Task {
-    /** Uniuqe integer ID.*/
-    readonly id: number,
+    /** Uniuqe ID.*/
+    readonly id: Integer,
 
     /** Name of the task, need not be unique but must not be empty.*/
     readonly name: string,
@@ -95,10 +115,10 @@ export interface Task {
     readonly computed_deadline: MillisecondsSinceEpoch,
 
     /** An integer representing the priority of the task: higher values mean more important, lower values means less important. Default is 0.*/
-    readonly priority: number,
+    readonly priority: Integer,
 
     /** The computed variant of {@link priority}: the highest of the priorities of all the tasks that depend on this one.*/
-    readonly computed_priority: number,
+    readonly computed_priority: Integer,
 
     /** The progress of the task: `todo`, `done` etc.*/
     readonly progress: Progress,
