@@ -1,1 +1,1 @@
-export {Task, MillisecondsSinceEpoch, dummy_type, Progress, ComputedProgress} from "./task";
+export {Task, MillisecondsSinceEpoch, dummy_type, Progress, ComputedProgress, Recurrence, Milliseconds} from "./task";

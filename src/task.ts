@@ -17,6 +17,12 @@ export type MillisecondsSinceEpoch = number & dummy_type;
 
 
 /**
+ * A time span in milliseconds.
+ */
+export type Milliseconds = number & dummy_type;
+
+
+/**
  * The progress of a {@link Task}.
  *
  *  - `todo`: not started yet but can be started
@@ -39,6 +45,24 @@ export type Progress = "todo" | "started" | "done" | "failed";
  *  - `notyet`: the `birthline` of the task is still in the future, so the task is not yet visible
  */
 export type ComputedProgress = Progress | "blocked" | "notyet";
+
+
+/**
+ * The details of how a {@link Task} is recurring.
+ */
+export interface Recurrence {
+    /** When the next instance of the task will be created.*/
+    readonly offset: Milliseconds,
+    /**
+     * When {@link offset} is counted from:
+     *
+     * - `deadline`: from the task's deadline, even if it was finished after the deadline
+     * - `finished`: whenever it was finished, reardless of its deadline
+     */
+    readonly offset_base: "deadline" | "finished",
+    /** Next instance of the task.*/
+    readonly next_instance: Task,
+}
 
 
 /**
@@ -97,7 +121,7 @@ export interface Task {
 
     /**
      * The tasks that can be added as a dependency to this task without causing a dependency-cycle.
-     * Also does not contain the tasks that are already depedencies of this task.
+     * Does not contain the tasks that are already depedencies of this task.
      * This is a computed property.
      */
     readonly possible_dependencies: Array<Task>,
@@ -107,4 +131,7 @@ export interface Task {
 
     /** If `true` then the task automatically becomes `done` when all of its dependencies are done.*/
     readonly group_like: boolean,
+
+    /** How the task is recurring. If `null` then it is not a recurring task.*/
+    readonly recurrence: Recurrence | null,
 }
