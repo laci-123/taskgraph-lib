@@ -1,1 +1,1 @@
-export {Task, do_stuff} from "./task";
+export {Task} from "./task";
