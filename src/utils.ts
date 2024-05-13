@@ -25,6 +25,10 @@ export function number_to_int(x: number): Integer {
     }
 }
 
+export function string_to_int(str: string): Integer {
+    return number_to_int(parseInt(str));
+}
+
 
 /**
  * Milliseconds since the [Unix Epoch](https://en.wikipedia.org/wiki/Unix_time).
@@ -42,3 +46,13 @@ export type MillisecondsSinceEpoch = number & dummy_type;
 export type Milliseconds = number & dummy_type;
 
 
+/**
+ * Throw an error.
+ *
+ * Exactly the same as just throwing an error
+ * except that it is an expression while `throw` is a statement,
+ * so it can be used in more contexts.
+ */
+export function throw_error(error: unknown): never {
+    throw error;
+}

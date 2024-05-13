@@ -2,6 +2,11 @@ import {Milliseconds, MillisecondsSinceEpoch, Integer} from "./utils";
 
 
 /**
+ * Possible values of {@link Progress}.
+ */
+export const progress_values = ["todo", "started", "done", "failed"] as const;
+
+/**
  * The progress of a {@link Task}.
  *
  *  - `todo`: not started yet but can be started
@@ -13,7 +18,7 @@ import {Milliseconds, MillisecondsSinceEpoch, Integer} from "./utils";
  * If a task becomes `failed` then all of the task that depend on it
  * also automatically fail. 
  */
-export type Progress = "todo" | "started" | "done" | "failed";
+export type Progress = typeof progress_values[number];
 
 
 /**
@@ -113,4 +118,52 @@ export interface Task {
 
     /** How the task is recurring. If `null` then it is not a recurring task.*/
     readonly recurrence: Recurrence | null,
+}
+
+
+/**
+ * JSON-serializable variant of {@link Recurrence}.
+ */
+export interface JsonRecurrence {
+    readonly offset: number,
+    readonly offset_base: "deadline" | "finished",
+    readonly next_instance: number,
+}
+
+export function isJsonRecurrence(thing: any): thing is JsonRecurrence {
+    return "offset"        in thing && typeof(thing.offset) === "number" &&
+           "offset_base"   in thing && (thing.offset_base === "deadline" || thing.offset_base === "finished") &&
+           "next_instance" in thing && typeof(thing.next_instance) === "number";
+}
+
+
+/**
+ * JSON-serializable variant of {@link Task}.
+ */
+export interface JsonTask {
+    readonly id: number,
+    readonly name: string,
+    readonly description: string,
+    readonly deadline: number | null, // JSON cannot store non-finite floats, so use null => Infinity mapping
+    readonly priority: number,
+    readonly progress: Progress,
+    readonly birthline: number | null, // JSON cannot store non-finite floats, so use null => Negative Infinity mapping
+    readonly dependencies: Array<number>,
+    readonly auto_fail: boolean,
+    readonly group_like: boolean,
+    readonly recurrence: JsonRecurrence | null,
+}
+
+export function isJsonTask(thing: any): thing is JsonTask {
+    return "id"           in thing && typeof(thing.id) === "number" &&
+           "name"         in thing && typeof(thing.name) === "string" &&
+           "description"  in thing && typeof(thing.description) === "string" &&
+           "deadline"     in thing && (thing.deadline === null || typeof(thing.deadline) === "number") &&
+           "priority"     in thing && typeof(thing.priority) === "number" &&
+           "progress"     in thing && progress_values.includes(thing.progress) &&
+           "birthline"    in thing && (thing.birthline === null || typeof(thing.birthline) === "number") &&
+           "dependencies" in thing && Array.isArray(thing.dependencies) && thing.dependencies.every(x => typeof(x) === "number") &&
+           "auto_fail"    in thing && typeof(thing.auto_fail) === "boolean" &&
+           "group_like"   in thing && typeof(thing.group_like) === "boolean" &&
+           "recurrence"   in thing && isJsonRecurrence(thing);
 }
