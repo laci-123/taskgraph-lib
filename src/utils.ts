@@ -1,3 +1,6 @@
+import {z} from "zod";
+
+
 /**
  * Used to prevent `TypeDoc` from resolving type aliases.
  * See [this issue](https://github.com/TypeStrong/typedoc/issues/1502#issuecomment-775645305)
@@ -25,9 +28,7 @@ export function number_to_int(x: number): Integer {
     }
 }
 
-export function string_to_int(str: string): Integer {
-    return number_to_int(parseInt(str));
-}
+export const z_integer = z.number().int().transform(x => x as Integer);
 
 
 /**

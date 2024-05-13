@@ -1,4 +1,4 @@
-import {Milliseconds, MillisecondsSinceEpoch, Integer} from "./utils";
+import {Milliseconds, MillisecondsSinceEpoch, Integer, z_integer} from "./utils";
 import {z} from "zod";
 
 
@@ -65,60 +65,60 @@ export interface Recurrence {
  */
 export interface Task {
     /** Uniuqe ID.*/
-    readonly id: Integer,
+    id: Integer,
 
     /** Name of the task, need not be unique but must not be empty.*/
-    readonly name: string,
+    name: string,
 
     /** Longer description of the task, may be empty.*/
-    readonly description: string,
+    description: string,
 
     /** The point in time until the task must be completed. `Infinity` means the task has no deadline.*/
-    readonly deadline: MillisecondsSinceEpoch,
+    deadline: MillisecondsSinceEpoch,
 
     /** The computed variant of {@link deadline}: the soonest of the deadlines of all the tasks that depend on this one.*/
-    readonly computed_deadline: MillisecondsSinceEpoch,
+    computed_deadline: MillisecondsSinceEpoch,
 
     /** An integer representing the priority of the task: higher values mean more important, lower values means less important. Default is 0.*/
-    readonly priority: Integer,
+    priority: Integer,
 
     /** The computed variant of {@link priority}: the highest of the priorities of all the tasks that depend on this one.*/
-    readonly computed_priority: Integer,
+    computed_priority: Integer,
 
     /** The progress of the task: `todo`, `done` etc.*/
-    readonly progress: Progress,
+    progress: Progress,
 
     /** The computed variant of {@link progress}.*/
-    readonly computed_progress: ComputedProgress,
+    computed_progress: ComputedProgress,
 
     /**
      * The point in time before which the task cannot be started. `Negative Infinity` means the task has no birthline.
      * 
      * (I don't know what the proper English term is. I came up with "birthline" because it's kind of the opposite of "deadline".)
      */
-    readonly birthline: MillisecondsSinceEpoch,
+    birthline: MillisecondsSinceEpoch,
 
     /** The tasks this task depends on.*/
-    readonly dependencies: Array<Task>,
+    dependencies: Array<Task>,
 
     /** The tasks that depend on this task. This is a computed property, only the {@link dependencies} are stored.*/
-    readonly dependees: Array<Task>,
+    dependees: Array<Task>,
 
     /**
      * The tasks that can be added as a dependency to this task without causing a dependency-cycle.
      * Does not contain the tasks that are already depedencies of this task.
      * This is a computed property.
      */
-    readonly possible_dependencies: Array<Task>,
+    possible_dependencies: Array<Task>,
 
     /** If `true` then the task automatically becomes `failed` when it is passed its deadline.*/
-    readonly auto_fail: boolean,
+    auto_fail: boolean,
 
     /** If `true` then the task automatically becomes `done` when all of its dependencies are done.*/
-    readonly group_like: boolean,
+    group_like: boolean,
 
     /** How the task is recurring. If `null` then it is not a recurring task.*/
-    readonly recurrence: Recurrence | null,
+    recurrence: Recurrence | null,
 }
 
 
@@ -128,23 +128,25 @@ export interface Task {
 const jsonRecurrence = z.object({
     offset: z.number(),
     offset_base: z.literal("deadline").or(z.literal("finished")),
-    next_instance: z.number().int(),
+    next_instance: z_integer,
 });
 
 
 /**
  * JSON-serializable variant of {@link Task}.
  */
-export const jsonTask = z.object({
-    id: z.number().int().transform(x => x as Integer),
+const jsonTask = z.object({
+    id: z_integer,
     name: z.string(),
     description: z.string(),
     deadline: z.number().nullable().transform(x => x === null ? Number.POSITIVE_INFINITY: x), // JSON cannot store non-finite floats, so we use null instead
-    priority: z.number().int().transform(x => x as Integer),
+    priority: z_integer,
     progress: z.enum(progress_values),
     birthline: z.number().nullable().transform(x => x === null ? Number.NEGATIVE_INFINITY: x), // JSON cannot store non-finite floats, so we use null instead
-    dependencies: z.array(z.number()),
+    dependencies: z.array(z_integer),
     auto_fail: z.boolean(),
     group_like: z.boolean(),
     recurrence: jsonRecurrence,
 });
+
+export const jsonTaskArray = z.array(jsonTask);
