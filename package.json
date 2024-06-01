@@ -1,6 +1,7 @@
 {
   "name": "@laci-123/taskgraph-lib",
   "version": "1.0.0",
+  "repository": "https://github.com/laci-123/taskgraph-lib",
   "publishConfig": {
     "registry": "https://npm.pkg.github.com/"
   },
