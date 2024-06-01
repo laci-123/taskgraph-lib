@@ -109,7 +109,7 @@ export interface Task {
      * Does not contain the tasks that are already depedencies of this task.
      * This is a computed property.
      */
-    possible_dependencies: Array<Task>,
+    possible_dependencies: Set<Task>,
 
     /** If `true` then the task automatically becomes `failed` when it is passed its deadline.*/
     auto_fail: boolean,
@@ -141,7 +141,7 @@ export function default_task(id: Integer): Task {
         birthline: Number.NEGATIVE_INFINITY,
         dependencies: new Set(),
         dependees: new Set(),
-        possible_dependencies: new Array(),
+        possible_dependencies: new Set(),
         auto_fail: false,
         group_like: false,
         recurrence: null,

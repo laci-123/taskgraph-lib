@@ -198,7 +198,8 @@ function compute(tg: TaskGraph, now: MillisecondsSinceEpoch) {
     const colors = new Map();
     for(const root of tg.roots) {
         colors.set(root, "white");
-        depth_first_traverse(root, colors, now);
+        const possible_dependencies = new Set(tg.tasks.values());
+        depth_first_traverse(root, colors, now, possible_dependencies);
     }
 
     for(const task of tg.tasks.values()) {
@@ -226,7 +227,7 @@ function compute(tg: TaskGraph, now: MillisecondsSinceEpoch) {
 
 type Color = "black" | "gray" | "white";
 
-function depth_first_traverse(task: Task, colors: Map<Task, Color>, now: MillisecondsSinceEpoch): ComputedProgress {
+function depth_first_traverse(task: Task, colors: Map<Task, Color>, now: MillisecondsSinceEpoch, possible_dependencies: Set<Task>): ComputedProgress {
     if(colors.get(task) === "gray") {
         throw new Error("Circular dependencies");
     }
@@ -240,13 +241,16 @@ function depth_first_traverse(task: Task, colors: Map<Task, Color>, now: Millise
     }
 
     colors.set(task, "gray");
+    possible_dependencies.delete(task);
 
     const dep_cps = new Array<ComputedProgress>();
     for(const dep of task.dependencies) {
         dep.computed_priority = number_to_int(Math.max(dep.computed_priority, task.computed_priority));
         dep.computed_deadline = Math.min(dep.computed_deadline, task.computed_deadline);
-        dep_cps.push(depth_first_traverse(dep, colors, now));
+        dep_cps.push(depth_first_traverse(dep, colors, now, possible_dependencies));
     }
+
+    task.possible_dependencies = possible_dependencies;
 
     const old_computed_progress = task.computed_progress;
 
@@ -322,7 +326,7 @@ function tg_from_json(json_str: string): TaskGraph {
             birthline:             json_task.birthline,
             dependencies:          new Set(),
             dependees:             new Set(),
-            possible_dependencies: [],
+            possible_dependencies: new Set(),
             auto_fail:             json_task.auto_fail,
             group_like:            json_task.group_like,
             recurrence:            null,
