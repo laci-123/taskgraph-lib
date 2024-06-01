@@ -16,10 +16,6 @@
     "test": "echo 'There are no test.'",
     "doc": "typedoc src/index.ts --out doc"
   },
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/laci-123/taskgraph-lib.git"
-  },
   "author": "Gohér László",
   "devDependencies": {
     "tsup": "^8.0.2",
