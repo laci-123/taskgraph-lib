@@ -30,6 +30,52 @@ export interface TaskGraph {
 }
 
 /**
+ * Loads a {@link TaskGraph} from JSON.
+ */
+export function load_tasks(json_string: string, now: MillisecondsSinceEpoch): TaskGraph {
+    const tg = tg_from_json(json_string);
+    compute(tg, now);
+    return tg;
+}
+
+/**
+ * Create a JSON string from the {@link TaskGraph}.
+ */
+export function save_tasks(tg: TaskGraph): string {
+    const jsonTasks = new Array();
+
+    for(const task of tg.tasks.values()) {
+        const dependencies = new Array<Integer>();
+        for(const dep of task.dependencies) {
+            dependencies.push(dep.id);
+        }
+
+        let recurrence = task.recurrence ? {
+                offset:        task.recurrence.offset,
+                offset_base:   task.recurrence.offset_base,
+                next_instance: task.recurrence.next_instance?.id,
+            } :
+            null;
+
+        jsonTasks.push({
+            id:           task.id,
+            description:  task.description,
+            priority:     task.priority,
+            progress:     task.progress,
+            birthline:    task.birthline === Number.NEGATIVE_INFINITY ? null : task.birthline,
+            deadline:     task.deadline  === Number.POSITIVE_INFINITY ? null: task.deadline,
+            auto_fail:    task.auto_fail,
+            group_like:   task.group_like,
+            finished:     task.finished,
+            dependencies: dependencies,
+            recurrence,
+        });
+    }
+
+    return JSON.stringify(jsonTasks, undefined, 4);
+}
+
+/**
  * Gets all tasks, or all tasks whose computed progress matches `filter`.
  */
 export function get_all_tasks(tg: TaskGraph, filter?: Progress): Set<Task> {
@@ -64,12 +110,15 @@ export function create_or_update_task(tg: TaskGraph, id: Integer, params: TaskPa
     }
     if(params.deadline) {
         task.deadline = params.deadline;
+        task.computed_deadline = params.deadline;
     }
     if(params.priority) {
         task.priority = params.priority;
+        task.computed_priority = params.priority;
     }
     if(params.progress) {
         task.progress = params.progress;
+        task.computed_progress = params.progress;
     }
     if(params.birthline) {
         task.birthline = params.birthline;
@@ -252,9 +301,9 @@ function smallest_available_id(tg: TaskGraph): Integer {
 }
 
 /**
- * Deserialize a {@link TaskGraph} from a JSON string.
+ * Deserializes a {@link TaskGraph} from a JSON string.
  */
-export function tg_from_json(json_str: string): TaskGraph {
+function tg_from_json(json_str: string): TaskGraph {
     const json: any  = JSON.parse(json_str);
     const json_tasks = jsonTaskArray.parse(json.tasks);
     const tasks = new Map<Integer, Task>();
@@ -284,7 +333,7 @@ export function tg_from_json(json_str: string): TaskGraph {
     }
     
     for(const json_task of json_tasks) {
-        const task = tasks.get(json_task.id)!; // This task mus be present in the map because we just put there in the previous loop.
+        const task = tasks.get(json_task.id)!; // This task must be present in the map because we just put there in the previous loop.
         for(const dep_id of json_task.dependencies) {
             const dep_task = tasks.get(dep_id) ?? throw_error(`reference to non-existent task: ${dep_id}`);
             task.dependencies.add(dep_task);
