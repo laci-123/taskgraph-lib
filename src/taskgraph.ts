@@ -1,6 +1,25 @@
-import { ComputedProgress, Task, jsonTaskArray } from "./task";
-import { Integer, MillisecondsSinceEpoch, number_to_int, throw_error } from "./utils";
+import { ComputedProgress, Progress, Task, default_task, jsonTaskArray } from "./task";
+import { Integer, Milliseconds, MillisecondsSinceEpoch, number_to_int, throw_error } from "./utils";
 
+
+/**
+ * Parameters of a task the user can set.
+ */
+export interface TaskParams {
+    name?: string,
+    description?: string,
+    deadline?: MillisecondsSinceEpoch,
+    priority?: Integer,
+    progress?: Progress,
+    birthline?: MillisecondsSinceEpoch,
+    dependencies?: Array<Integer>,
+    auto_fail?: boolean,
+    group_like?: boolean,
+    recurrence?: {
+        recurrence_base: "deadline" | "finished",
+        recurrence_offset: Milliseconds,
+    } | null,
+}
 
 /**
  * Collection of {@link Task}s with dependencies between them.
@@ -11,9 +30,122 @@ export interface TaskGraph {
 }
 
 /**
+ * Gets all tasks, or all tasks whose computed progress matches `filter`.
+ */
+export function get_all_tasks(tg: TaskGraph, filter?: Progress): Set<Task> {
+    if(filter) {
+        const tasks = new Set<Task>();
+        for(const task of tg.tasks.values()) {
+            if(task.computed_progress === filter) {
+                tasks.add(task);
+            }
+        }
+        return tasks;
+    }
+    else {
+        return new Set(tg.tasks.values());
+    }
+}
+
+/**
+ * Creates a new task by the given ID, or updates it if it already exists.
+ */
+export function create_or_update_task(tg: TaskGraph, id: Integer, params: TaskParams, now: MillisecondsSinceEpoch) {
+    let task = tg.tasks.get(id);
+    if(!task) {
+        task = default_task(id);
+        tg.roots.add(task);
+    }
+    if(params.name) {
+        task.name = params.name;
+    }
+    if(params.description) {
+        task.description = params.description;
+    }
+    if(params.deadline) {
+        task.deadline = params.deadline;
+    }
+    if(params.priority) {
+        task.priority = params.priority;
+    }
+    if(params.progress) {
+        task.progress = params.progress;
+    }
+    if(params.birthline) {
+        task.birthline = params.birthline;
+    }
+    if(params.auto_fail) {
+        task.auto_fail = params.auto_fail;
+    }
+    if(params.group_like) {
+        task.group_like = params.group_like;
+    }
+    if(params.dependencies) {
+        const new_deps = new Set<Task>();
+        for(const dep_id of params.dependencies) {
+            const dep = tg.tasks.get(dep_id) ?? throw_error(`reference to non-existent task: ${dep_id}`);
+            new_deps.add(dep);
+        }
+        for(const dep of task.dependencies) {
+            if(!new_deps.has(dep)) {
+                dep.dependees.delete(task);
+                if(dep.dependees.size === 0) {
+                    tg.roots.add(dep);
+                }
+            }
+        }
+        task.dependencies = new_deps;
+        for(const dep of task.dependencies) {
+            dep.dependees.add(task);
+            tg.roots.delete(dep);
+        }
+    }
+    if(params.recurrence) {
+        task.recurrence = {
+            offset_base: params.recurrence.recurrence_base,
+            offset: params.recurrence.recurrence_offset,
+            next_instance: null, // will be set by compute
+        }
+    }
+    else if(params.recurrence === null){
+        task.recurrence = null;
+    }
+
+    compute(tg, now);
+}
+
+/**
+ * Gets a task by ID.
+ *
+ * If no tasks exists with the given ID then returns `undefined`.
+ */
+export function get_task(tg: TaskGraph, id: Integer): Task | undefined {
+    return tg.tasks.get(id);
+}
+
+/**
+ * Deletes a task by ID.
+ * 
+ * If not tasks exists with the given ID then does not do anything.
+ * Throws an error if others tasks depend on the task with the given ID.
+ */
+export function delete_task(tg: TaskGraph, id: Integer) {
+    const task = tg.tasks.get(id);
+    if(task) {
+        if(task.dependees.size > 0) {
+            throw new Error("Cannot delete task because other tasks depend on it");
+        }
+        else {
+            tg.tasks.delete(id);
+            tg.roots.delete(task);
+        }
+    }
+}
+
+/**
  * Computes the values of computed properties of the tasks in `tg`.
  */
-export function compute(tg: TaskGraph, now: MillisecondsSinceEpoch) {
+function compute(tg: TaskGraph, now: MillisecondsSinceEpoch) {
     const colors = new Map();
     for(const root of tg.roots) {
         colors.set(root, "white");
@@ -53,7 +185,7 @@ function depth_first_traverse(task: Task, colors: Map<Task, Color>, now: Millise
         throw new Error("Birthline is after deadline");
     }
 
-    if(task.dependencies.length == 0 || colors.get(task) === "black") {
+    if(task.dependencies.size == 0 || colors.get(task) === "black") {
         colors.set(task, "black");
         return task.computed_progress;
     }
@@ -139,8 +271,8 @@ export function tg_from_json(json_str: string): TaskGraph {
             progress:              json_task.progress,
             computed_progress:     json_task.progress,
             birthline:             json_task.birthline,
-            dependencies:          [],
-            dependees:             [],
+            dependencies:          new Set(),
+            dependees:             new Set(),
             possible_dependencies: [],
             auto_fail:             json_task.auto_fail,
             group_like:            json_task.group_like,
@@ -155,8 +287,8 @@ export function tg_from_json(json_str: string): TaskGraph {
         const task = tasks.get(json_task.id)!; // This task mus be present in the map because we just put there in the previous loop.
         for(const dep_id of json_task.dependencies) {
             const dep_task = tasks.get(dep_id) ?? throw_error(`reference to non-existent task: ${dep_id}`);
-            task.dependencies.push(dep_task);
-            dep_task.dependees.push(task);
+            task.dependencies.add(dep_task);
+            dep_task.dependees.add(task);
             roots.delete(task);
         }
         const next_instance_id = json_task.recurrence.next_instance;

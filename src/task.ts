@@ -1,4 +1,4 @@
-import {Milliseconds, MillisecondsSinceEpoch, Integer, z_integer} from "./utils";
+import {Milliseconds, MillisecondsSinceEpoch, Integer, z_integer, number_to_int} from "./utils";
 import {z} from "zod";
 
 
@@ -99,10 +99,10 @@ export interface Task {
     birthline: MillisecondsSinceEpoch,
 
     /** The tasks this task depends on.*/
-    dependencies: Array<Task>,
+    dependencies: Set<Task>,
 
     /** The tasks that depend on this task. This is a computed property, only the {@link dependencies} are stored.*/
-    dependees: Array<Task>,
+    dependees: Set<Task>,
 
     /**
      * The tasks that can be added as a dependency to this task without causing a dependency-cycle.
@@ -122,6 +122,31 @@ export interface Task {
 
     /** When did the task become `done`.*/
     finished: MillisecondsSinceEpoch | null,
+}
+
+/**
+ * Creates a {@link Task} with default values.
+ */
+export function default_task(id: Integer): Task {
+    return {
+        id,
+        name: "",
+        description: "",
+        deadline: Number.POSITIVE_INFINITY,
+        computed_deadline: Number.POSITIVE_INFINITY,
+        priority: number_to_int(0),
+        computed_priority: number_to_int(0),
+        progress: "todo",
+        computed_progress: "todo",
+        birthline: Number.NEGATIVE_INFINITY,
+        dependencies: new Set(),
+        dependees: new Set(),
+        possible_dependencies: new Array(),
+        auto_fail: false,
+        group_like: false,
+        recurrence: null,
+        finished: null,
+    }
 }
 
 
@@ -153,4 +178,7 @@ const jsonTask = z.object({
     finished: z.number().nullable(),
 });
 
+/**
+ * JSON-serializable array of {@link Task}s.
+ */
 export const jsonTaskArray = z.array(jsonTask);
