@@ -37,16 +37,16 @@ export type ComputedProgress = Progress | "blocked" | "notyet";
  */
 export interface Recurrence {
     /** When the next instance of the task will be created.*/
-    readonly offset: Milliseconds,
+    offset: Milliseconds,
     /**
      * When {@link offset} is counted from:
      *
      * - `deadline`: from the task's deadline, even if it was finished after the deadline
      * - `finished`: whenever it was finished, reardless of its deadline
      */
-    readonly offset_base: "deadline" | "finished",
+    offset_base: "deadline" | "finished",
     /** Next instance of the task.*/
-    readonly next_instance: Task,
+    next_instance: Task | null,
 }
 
 
@@ -119,6 +119,9 @@ export interface Task {
 
     /** How the task is recurring. If `null` then it is not a recurring task.*/
     recurrence: Recurrence | null,
+
+    /** When did the task become `done`.*/
+    finished: MillisecondsSinceEpoch | null,
 }
 
 
@@ -147,6 +150,7 @@ const jsonTask = z.object({
     auto_fail: z.boolean(),
     group_like: z.boolean(),
     recurrence: jsonRecurrence,
+    finished: z.number().nullable(),
 });
 
 export const jsonTaskArray = z.array(jsonTask);
