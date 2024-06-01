@@ -8,7 +8,7 @@
     "/dist"
   ],
   "scripts": {
-    "build": "tsup src/index.ts",
+    "build": "tsup src/index.ts --dts",
     "test": "echo 'There are no test.'",
     "doc": "typedoc src/index.ts --out doc"
   },
