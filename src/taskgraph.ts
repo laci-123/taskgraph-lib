@@ -22,6 +22,33 @@ export interface TaskParams {
 }
 
 /**
+ * Converts a {@link Task} to a {@link TaskParams} object.
+ */
+export function taskParams_from_task(task: Task): TaskParams {
+    const dependencies = new Array<Integer>();
+    for(const t of task.dependencies) {
+        dependencies.push(t.id);
+    }
+    const recurrence = task.recurrence ? {
+        recurrence_base: task.recurrence.offset_base,
+        recurrence_offset: task.recurrence.offset,
+    } : null;
+
+    return {
+        name: task.name,
+        description: task.description,
+        deadline: task.deadline,
+        priority: task.priority,
+        progress: task.progress,
+        birthline: task.birthline,
+        dependencies,
+        auto_fail: task.auto_fail,
+        group_like: task.group_like,
+        recurrence,
+    };
+}
+
+/**
  * Collection of {@link Task}s with dependencies between them.
  */
 export interface TaskGraph {
