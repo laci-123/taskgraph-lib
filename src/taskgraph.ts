@@ -58,6 +58,8 @@ export interface TaskGraph {
 
 /**
  * Loads a {@link TaskGraph} from JSON.
+ *
+ * Throws error if `json_string` cannot be interpreted as a valid `TaskGraph`.
  */
 export function load_tasks(json_string: string, now: MillisecondsSinceEpoch): TaskGraph {
     const tg = tg_from_json(json_string);
@@ -322,7 +324,10 @@ function depth_first_traverse(task: Task, colors: Map<Task, Color>, now: Millise
     return task.computed_progress;
 }
 
-function smallest_available_id(tg: TaskGraph): Integer {
+/**
+ * Returns the smallest ID that is not in use in `tg`.
+ */
+export function smallest_available_id(tg: TaskGraph): Integer {
     for(let i = 0; i < tg.tasks.size; ++i) {
         if(!(tg.tasks.has(number_to_int(i)))) {
             return number_to_int(i);
