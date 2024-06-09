@@ -57,6 +57,16 @@ export interface TaskGraph {
 }
 
 /**
+ * Creates a {@link TaskGraph} that does not contain any tasks.
+ */
+export function empty_taskGraph(): TaskGraph {
+    return {
+        tasks: new Map(),
+        roots: new Set(),
+    };
+}
+
+/**
  * Loads a {@link TaskGraph} from JSON.
  *
  * Throws error if `json_string` cannot be interpreted as a valid `TaskGraph`.
